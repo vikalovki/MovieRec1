@@ -1,6 +1,18 @@
 from flask import Flask, render_template, request, redirect, session, url_for, flash, jsonify
 import sqlite3, re
 
+def init_db():
+    conn = get_db()
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS users ( ... );  -- скопируй все CREATE TABLE из build_db.py
+    """)
+    # И так для всех таблиц: movies, genres, movie_genres, ratings, reviews, user_movies, playlists, playlist_movies, friends, playlist_access
+    conn.commit()
+    conn.close()
+
+# Вызови эту функцию перед первым запросом
+init_db()
+
 app = Flask(__name__)
 app.secret_key = "supersecretkey123"
 
