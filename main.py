@@ -1,18 +1,5 @@
 from flask import Flask, render_template, request, redirect, session, url_for, flash, jsonify
-import sqlite3, re
-import os
-
-def init_db():
-    conn = get_db()
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS users ( ... );  -- скопируй все CREATE TABLE из build_db.py
-    """)
-    # И так для всех таблиц: movies, genres, movie_genres, ratings, reviews, user_movies, playlists, playlist_movies, friends, playlist_access
-    conn.commit()
-    conn.close()
-
-# Вызови эту функцию перед первым запросом
-init_db()
+import sqlite3, re, os
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey123"
@@ -36,6 +23,120 @@ def movie_with_genres(conn, where_clause="", params=(), suffix=""):
         {suffix}
     """
     return conn.execute(sql, params).fetchall()
+
+# Создание таблиц перед первым запросом
+@app.before_request
+def create_tables():
+    conn = get_db()
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            email TEXT
+        );
+        CREATE TABLE IF NOT EXISTS movies (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            description TEXT,
+            release_year INTEGER,
+            country TEXT,
+            director TEXT,
+            cast TEXT,
+            duration INTEGER,
+            kinopoisk_rating REAL,
+            poster_url TEXT,
+            type TEXT DEFAULT 'movie',
+            status TEXT DEFAULT 'released',
+            seasons INTEGER,
+            episodes INTEGER
+        );
+        CREATE TABLE IF NOT EXISTS genres (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS movie_genres (
+            movie_id INTEGER,
+            genre_id INTEGER,
+            FOREIGN KEY (movie_id) REFERENCES movies(id),
+            FOREIGN KEY (genre_id) REFERENCES genres(id),
+            PRIMARY KEY (movie_id, genre_id)
+        );
+        CREATE TABLE IF NOT EXISTS ratings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            movie_id INTEGER,
+            rating INTEGER CHECK(rating >= 1 AND rating <= 5),
+            UNIQUE(user_id, movie_id),
+            FOREIGN KEY (user_id) REFERENCES users(id),
+            FOREIGN KEY (movie_id) REFERENCES movies(id)
+        );
+        CREATE TABLE IF NOT EXISTS reviews (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            movie_id INTEGER,
+            review_text TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id),
+            FOREIGN KEY (movie_id) REFERENCES movies(id)
+        );
+        CREATE TABLE IF NOT EXISTS user_movies (
+            user_id INTEGER,
+            movie_id INTEGER,
+            watched BOOLEAN DEFAULT 0,
+            liked BOOLEAN DEFAULT 0,
+            want_to_watch BOOLEAN DEFAULT 0,
+            PRIMARY KEY (user_id, movie_id),
+            FOREIGN KEY (user_id) REFERENCES users(id),
+            FOREIGN KEY (movie_id) REFERENCES movies(id)
+        );
+        CREATE TABLE IF NOT EXISTS playlists (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            name TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            is_public BOOLEAN DEFAULT 0,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        );
+        CREATE TABLE IF NOT EXISTS playlist_movies (
+            playlist_id INTEGER,
+            movie_id INTEGER,
+            added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (playlist_id, movie_id),
+            FOREIGN KEY (playlist_id) REFERENCES playlists(id),
+            FOREIGN KEY (movie_id) REFERENCES movies(id)
+        );
+        CREATE TABLE IF NOT EXISTS friends (
+            user_id INTEGER,
+            friend_id INTEGER,
+            status TEXT DEFAULT 'pending',
+            PRIMARY KEY (user_id, friend_id),
+            FOREIGN KEY (user_id) REFERENCES users(id),
+            FOREIGN KEY (friend_id) REFERENCES users(id)
+        );
+        CREATE TABLE IF NOT EXISTS playlist_access (
+            playlist_id INTEGER,
+            user_id INTEGER,
+            PRIMARY KEY (playlist_id, user_id),
+            FOREIGN KEY (playlist_id) REFERENCES playlists(id),
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        );
+    """)
+    conn.commit()
+    conn.close()
+
+# Заполнение жанров один раз при старте (если таблица genres пуста)
+with app.app_context():
+    conn = get_db()
+    existing = conn.execute("SELECT COUNT(*) FROM genres").fetchone()[0]
+    if existing == 0:
+        genres = ['Боевик','Драма','Комедия','Фантастика','Ужасы','Триллер',
+                  'Мелодрама','Фэнтези','Приключения','Детектив','Криминал',
+                  'Исторический','Военный','Спорт','Мюзикл','Вестерн','Биография',
+                  'Анимация','Семейный']
+        conn.executemany("INSERT INTO genres (name) VALUES (?)", [(g,) for g in genres])
+        conn.commit()
+    conn.close()
 
 # ---------- ГЛАВНАЯ ----------
 @app.route("/")
@@ -328,7 +429,6 @@ def mark_status(movie_id):
     field = request.path.split("/")[1].replace("mark_","")
     val = request.form.get(field)=="true"
     conn = get_db()
-    # Избранное
     if field == "liked":
         if val:
             conn.execute(
@@ -342,14 +442,12 @@ def mark_status(movie_id):
                 "ON CONFLICT(user_id, movie_id) DO UPDATE SET liked = 0",
                 (uid, movie_id)
             )
-    # Просмотрено
     elif field == "watched":
         conn.execute(
             "INSERT INTO user_movies (user_id, movie_id, watched) VALUES (?, ?, ?) "
             "ON CONFLICT(user_id, movie_id) DO UPDATE SET watched = ?",
             (uid, movie_id, val, val)
         )
-    # Хочу посмотреть
     elif field == "want_to_watch":
         conn.execute(
             "INSERT INTO user_movies (user_id, movie_id, want_to_watch) VALUES (?, ?, ?) "
