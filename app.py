@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, session, url_for, flash, jsonify
 import sqlite3, re
+import os
 
 def init_db():
     conn = get_db()
@@ -411,5 +412,6 @@ def recommendations():
     conn.close()
     return render_template("recommendations.html", movies=movies, series=series, is_new_user=False, rated_count=rated_cnt, active="recommendations")
 
-if __name__=="__main__":
-    app.run(debug=True)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
