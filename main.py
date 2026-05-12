@@ -24,7 +24,7 @@ def movie_with_genres(conn, where_clause="", params=(), suffix=""):
     """
     return conn.execute(sql, params).fetchall()
 
-# Создание таблиц перед первым запросом
+# ---------- Создание таблиц и начальное заполнение ----------
 @app.before_request
 def create_tables():
     conn = get_db()
@@ -125,11 +125,10 @@ def create_tables():
     conn.commit()
     conn.close()
 
-# Заполнение жанров один раз при старте (если таблица genres пуста)
+# Заполним жанры, если таблица пуста
 with app.app_context():
     conn = get_db()
-    existing = conn.execute("SELECT COUNT(*) FROM genres").fetchone()[0]
-    if existing == 0:
+    if conn.execute("SELECT COUNT(*) FROM genres").fetchone()[0] == 0:
         genres = ['Боевик','Драма','Комедия','Фантастика','Ужасы','Триллер',
                   'Мелодрама','Фэнтези','Приключения','Детектив','Криминал',
                   'Исторический','Военный','Спорт','Мюзикл','Вестерн','Биография',
