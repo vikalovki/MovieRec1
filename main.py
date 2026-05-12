@@ -24,7 +24,7 @@ def movie_with_genres(conn, where_clause="", params=(), suffix=""):
     """
     return conn.execute(sql, params).fetchall()
 
-# ---------- Создание таблиц и начальное заполнение ----------
+# ---------- СОЗДАНИЕ ТАБЛИЦ И ЗАПОЛНЕНИЕ ЖАНРАМИ ----------
 @app.before_request
 def create_tables():
     conn = get_db()
@@ -122,19 +122,15 @@ def create_tables():
             FOREIGN KEY (user_id) REFERENCES users(id)
         );
     """)
-    conn.commit()
-    conn.close()
-
-# Заполним жанры, если таблица пуста
-with app.app_context():
-    conn = get_db()
-    if conn.execute("SELECT COUNT(*) FROM genres").fetchone()[0] == 0:
+    # Заполняем жанры, если таблица пуста
+    existing = conn.execute("SELECT COUNT(*) FROM genres").fetchone()[0]
+    if existing == 0:
         genres = ['Боевик','Драма','Комедия','Фантастика','Ужасы','Триллер',
                   'Мелодрама','Фэнтези','Приключения','Детектив','Криминал',
                   'Исторический','Военный','Спорт','Мюзикл','Вестерн','Биография',
                   'Анимация','Семейный']
         conn.executemany("INSERT INTO genres (name) VALUES (?)", [(g,) for g in genres])
-        conn.commit()
+    conn.commit()
     conn.close()
 
 # ---------- ГЛАВНАЯ ----------
