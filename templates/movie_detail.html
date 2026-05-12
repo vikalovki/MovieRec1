@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ movie.title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <button class="menu-toggle">☰</button>
+            <nav class="user-panel">
+                <a href="/home">🏠 Каталог</a>
+                <a href="/profile">👤 {{ session['username'] }}</a>
+                <a href="/my-collections">📁 Мои подборки</a>
+                <a href="/friends">👥 Друзья</a>
+                <a href="/recommendations" class="btn-outline">📌 Рекомендации</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="content movie-page">
+        {% if session.get('previous_page') %}
+        <div class="back-to-search">
+            <a href="{{ session['previous_page'] }}" class="btn-back">← Назад</a>
+        </div>
+        {% else %}
+        <div class="back-to-search">
+            <a href="/home" class="btn-back">← Назад в каталог</a>
+        </div>
+        {% endif %}
+
+        <div class="movie-header">
+            <div class="poster-container">
+                {% if movie.poster_url %}
+                <img src="{{ movie.poster_url }}" alt="{{ movie.title }}" class="movie-poster">
+                {% else %}
+                <div class="poster-placeholder"><span class="poster-icon">🎬</span><span>{{ movie.title[:2] }}</span></div>
+                {% endif %}
+            </div>
+            <div class="movie-title-section">
+                <h1>{{ movie.title }}</h1>
+                <div class="movie-meta">
+                    <span class="year">{{ movie.release_year }}</span><span class="dot">•</span>
+                    <span class="duration">{{ movie.duration }} мин</span><span class="dot">•</span>
+                    <span class="genres">{{ movie.genres or 'Жанр не указан' }}</span><span class="dot">•</span>
+                    <span class="country">{{ movie.country }}</span>
+                </div>
+                {% if movie.type == 'series' and (movie.seasons or movie.episodes) %}
+                <div class="series-info">📺 Сезонов: {{ movie.seasons or '?' }}, серий: {{ movie.episodes or '?' }}</div>
+                {% endif %}
+                <div class="rating-big">
+                    {% if movie.avg_rating %}
+                    <span class="rating-value">{{ "%.1f"|format(movie.avg_rating) }}</span><span class="rating-stars">⭐</span>
+                    {% else %}
+                    <span class="no-rating">Нет оценок</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="movie-actions">
+            <div class="action-group">
+                <h3>Оценить фильм</h3>
+                <form action="/rate/{{ movie.id }}" method="POST" class="rating-form-inline">
+                    <div class="stars-rating">
+                        {% for i in range(5, 0, -1) %}
+                        <input type="radio" id="star{{ i }}" name="rating" value="{{ i }}" {% if user_rating == i %}checked{% endif %} />
+                        <label for="star{{ i }}" title="{{ i }} звёзд">★</label>
+                        {% endfor %}
+                    </div>
+                    <button type="submit" class="btn-primary">Сохранить оценку</button>
+                </form>
+                {% if user_rating %}<p style="margin-top: 10px;">Ваша текущая оценка: {{ user_rating }}/5</p>{% endif %}
+            </div>
+
+            <div class="action-group status-group">
+                <h3>Статус просмотра</h3>
+                <div class="toggle-buttons">
+                    <button type="button" id="toggle-watched" class="toggle-btn {% if user_status.watched %}active{% endif %}">✔️ Просмотрено</button>
+                    <button type="button" id="toggle-liked" class="toggle-btn {% if user_status.liked %}active{% endif %}">★ В избранное</button>
+                    <button type="button" id="toggle-want" class="toggle-btn {% if user_status.want_to_watch %}active{% endif %}">🔖 Хочу посмотреть</button>
+                </div>
+                <span id="status-message" class="status-msg"></span>
+            </div>
+
+            {% if session.user_id %}
+            <div class="action-group playlist-group">
+                <h3>📋 Добавить в подборку</h3>
+                <select id="collection-select" class="playlist-select">
+                    <option value="">-- Выберите подборку --</option>
+                    {% for col in user_collections %}
+                    <option value="{{ col.id }}">{{ col.name }}</option>
+                    {% endfor %}
+                </select>
+                <button id="add-to-collection-btn" class="btn-outline" data-movie-id="{{ movie.id }}">Добавить</button>
+                <span id="playlist-message" class="status-msg"></span>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="movie-description">
+            <h3>Описание</h3>
+            <p>{{ movie.description }}</p>
+            <div class="details-grid">
+                <div><strong>Режиссёр:</strong> {{ movie.director or 'Не указан' }}</div>
+                <div><strong>В ролях:</strong> {{ movie.cast or 'Не указаны' }}</div>
+                {% if movie.kinopoisk_rating %}<div><strong>Кинопоиск:</strong> {{ movie.kinopoisk_rating }}</div>{% endif %}
+            </div>
+        </div>
+
+        <div class="reviews-section">
+            <h2>📝 Отзывы зрителей</h2>
+            {% for review in reviews %}
+            <div class="review"><p><strong>{{ review.username }}</strong> <span class="review-date">{{ review.created_at }}</span></p><p>{{ review.review_text }}</p></div>
+            {% else %}
+            <p class="no-reviews">Пока нет отзывов. Будьте первым!</p>
+            {% endfor %}
+            <h3>Оставить отзыв</h3>
+            <form method="POST" class="review-form">
+                <textarea name="review_text" rows="3" placeholder="Поделитесь впечатлениями..." required></textarea>
+                <button type="submit" class="btn-primary">Отправить</button>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        // Бургер
+        const menuToggle = document.querySelector('.menu-toggle');
+        const userPanel = document.querySelector('.user-panel');
+        menuToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            userPanel.classList.toggle('show');
+        });
+        document.addEventListener('click', function() {
+            userPanel.classList.remove('show');
+        });
+
+        // Кнопки статуса
+        (function() {
+            const watchedBtn = document.getElementById('toggle-watched');
+            const likedBtn = document.getElementById('toggle-liked');
+            const wantBtn = document.getElementById('toggle-want');
+            const msgSpan = document.getElementById('status-message');
+
+            async function sendStatus(type, value) {
+                const formData = new FormData();
+                formData.append(type, value);
+                const resp = await fetch(`/mark_${type}/{{ movie.id }}`, { method: 'POST', body: formData });
+                return resp.json();
+            }
+
+            if (watchedBtn) watchedBtn.addEventListener('click', async () => {
+                const newState = !watchedBtn.classList.contains('active');
+                const data = await sendStatus('watched', newState);
+                if (data.success) {
+                    watchedBtn.classList.toggle('active', newState);
+                    if (!newState) { likedBtn.classList.remove('active'); await sendStatus('liked', false); }
+                    msgSpan.textContent = 'Сохранено'; setTimeout(() => msgSpan.textContent = '', 2000);
+                }
+            });
+            if (likedBtn) likedBtn.addEventListener('click', async () => {
+                let newState = !likedBtn.classList.contains('active');
+                if (newState && !watchedBtn.classList.contains('active')) {
+                    watchedBtn.classList.add('active'); await sendStatus('watched', true);
+                }
+                const data = await sendStatus('liked', newState);
+                if (data.success) { likedBtn.classList.toggle('active', newState); msgSpan.textContent = 'Сохранено'; setTimeout(() => msgSpan.textContent = '', 2000); }
+            });
+            if (wantBtn) wantBtn.addEventListener('click', async () => {
+                const newState = !wantBtn.classList.contains('active');
+                const data = await sendStatus('want_to_watch', newState);
+                if (data.success) { wantBtn.classList.toggle('active', newState); msgSpan.textContent = 'Сохранено'; setTimeout(() => msgSpan.textContent = '', 2000); }
+            });
+
+            const addBtn = document.getElementById('add-to-collection-btn');
+            if (addBtn) {
+                addBtn.addEventListener('click', function() {
+                    const select = document.getElementById('collection-select');
+                    const collectionId = select.value;
+                    if (!collectionId) {
+                        document.getElementById('playlist-message').textContent = 'Выберите подборку';
+                        return;
+                    }
+                    const movieId = this.dataset.movieId;
+                    fetch(`/collection/${collectionId}/add/${movieId}`, { method: 'POST' })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                document.getElementById('playlist-message').textContent = 'Добавлено!';
+                                setTimeout(() => location.reload(), 1000);
+                            } else {
+                                document.getElementById('playlist-message').textContent = data.error || 'Ошибка';
+                            }
+                        });
+                });
+            }
+        })();
+    </script>
+</body>
+</html>

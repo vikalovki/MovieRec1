@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Регистрация</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="form-container">
+        <h1>Регистрация</h1>
+        <p style="color: #ccc; margin-bottom: 25px; text-align: center;">
+            🎬 Зарегистрируйтесь, чтобы получать персональные рекомендации, сохранять фильмы в избранное и создавать киноподборки.
+        </p>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flashes">
+                {% for category, message in messages %}
+                    {% if category == 'error' %}
+                    <li class="{{ category }}">{{ message }}</li>
+                    {% endif %}
+                {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+        <form method="POST">
+            <input name="username" placeholder="Логин" required value="{{ request.form.username if request.form.username else '' }}">
+            <input name="email" type="email" placeholder="Email (например, user@example.com)" required value="{{ email or '' }}">
+            <input name="password" type="password" placeholder="Пароль" required>
+            <button type="submit">Создать аккаунт</button>
+        </form>
+        <p>Уже есть аккаунт? <a href="/login">Войти</a></p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Профиль {{ user.username }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <button class="menu-toggle">☰</button>
+            <nav class="user-panel">
+                <a href="/home">🏠 Каталог</a>
+                <a href="/profile" class="active">👤 {{ session['username'] }}</a>
+                <a href="/my-collections">📁 Мои подборки</a>
+                <a href="/friends">👥 Друзья</a>
+                <a href="/recommendations" class="btn-outline">📌 Рекомендации</a>
+                <a href="/logout" class="btn-outline">Выйти</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="content">
+        <h1>👤 Профиль: {{ user.username }}</h1>
+
+        <section class="profile-section">
+            <h2>⭐ Оценённые фильмы ({{ rated_movies|length }})</h2>
+            {% if rated_movies %}
+            <div class="movie-grid small">
+                {% for movie in rated_movies %}
+                <div class="movie-card">
+                    <h3><a href="/movie/{{ movie.id }}">{{ movie.title }}</a></h3>
+                    <p>{{ movie.genres or 'Жанр не указан' }} ({{ movie.release_year }})</p>
+                    <p>Моя оценка: {{ movie.rating }} / 5</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p>Вы ещё не оценили ни одного фильма.</p>
+            {% endif %}
+        </section>
+
+        <section class="profile-section">
+            <h2>★ В избранном ({{ favorite_movies|length }})</h2>
+            {% if favorite_movies %}
+            <div class="movie-grid small">
+                {% for movie in favorite_movies %}
+                <div class="movie-card">
+                    <h3><a href="/movie/{{ movie.id }}">{{ movie.title }}</a></h3>
+                    <p>{{ movie.genres or 'Жанр не указан' }} ({{ movie.release_year }})</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p>Вы ещё не добавили ни одного фильма в избранное.</p>
+            {% endif %}
+        </section>
+
+        <section class="profile-section">
+            <h2>🔖 Хочу посмотреть ({{ want_to_watch_movies|length }})</h2>
+            {% if want_to_watch_movies %}
+            <div class="movie-grid small">
+                {% for movie in want_to_watch_movies %}
+                <div class="movie-card">
+                    <h3><a href="/movie/{{ movie.id }}">{{ movie.title }}</a></h3>
+                    <p>{{ movie.genres or 'Жанр не указан' }} ({{ movie.release_year }})</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p>Ваш список «Хочу посмотреть» пуст.</p>
+            {% endif %}
+        </section>
+
+        <section class="profile-section">
+            <h2>📝 Мои отзывы ({{ reviews|length }})</h2>
+            {% if reviews %}
+            <div class="reviews-list">
+                {% for review in reviews %}
+                <div class="review-item">
+                    <h3><a href="/movie/{{ review.id }}">{{ review.title }}</a></h3>
+                    <p class="review-date">{{ review.created_at }}</p>
+                    <p>{{ review.review_text }}</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p>Вы ещё не написали ни одного отзыва.</p>
+            {% endif %}
+        </section>
+    </main>
+
+    <script>
+        const menuToggle = document.querySelector('.menu-toggle');
+        const userPanel = document.querySelector('.user-panel');
+        menuToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            userPanel.classList.toggle('show');
+        });
+        document.addEventListener('click', function() {
+            userPanel.classList.remove('show');
+        });
+    </script>
+</body>
+</html>

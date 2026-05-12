@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Профиль {{ user.username }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <button class="menu-toggle">☰</button>
+            <nav class="user-panel">
+                <a href="/home">🏠 Каталог</a>
+                <a href="/profile">👤 {{ session['username'] }}</a>
+                <a href="/my-collections">📁 Мои подборки</a>
+                <a href="/friends">👥 Друзья</a>
+                <a href="/recommendations" class="btn-outline">📌 Рекомендации</a>
+                <a href="/logout" class="btn-outline">Выйти</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="content">
+        <h1>👤 Профиль: {{ user.username }}</h1>
+
+        <section class="profile-section">
+            <h2>⭐ Оценённые фильмы ({{ rated_movies|length }})</h2>
+            {% if rated_movies %}
+            <div class="movie-grid small">
+                {% for movie in rated_movies %}
+                <div class="movie-card">
+                    <h3><a href="/movie/{{ movie.id }}">{{ movie.title }}</a></h3>
+                    <p>{{ movie.genres or 'Жанр не указан' }} ({{ movie.release_year }})</p>
+                    <p>Оценка: {{ movie.rating }} / 5</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p>Нет оценённых фильмов.</p>
+            {% endif %}
+        </section>
+
+        <section class="profile-section">
+            <h2>✅ Просмотренные фильмы ({{ watched_movies|length }})</h2>
+            {% if watched_movies %}
+            <div class="movie-grid small">
+                {% for movie in watched_movies %}
+                <div class="movie-card">
+                    <h3><a href="/movie/{{ movie.id }}">{{ movie.title }}</a></h3>
+                    <p>{{ movie.genres or 'Жанр не указан' }} ({{ movie.release_year }})</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p>Нет просмотренных фильмов.</p>
+            {% endif %}
+        </section>
+
+        <section class="profile-section">
+            <h2>★ В избранном ({{ favorite_movies|length }})</h2>
+            {% if favorite_movies %}
+            <div class="movie-grid small">
+                {% for movie in favorite_movies %}
+                <div class="movie-card">
+                    <h3><a href="/movie/{{ movie.id }}">{{ movie.title }}</a></h3>
+                    <p>{{ movie.genres or 'Жанр не указан' }} ({{ movie.release_year }})</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p>Нет избранных фильмов.</p>
+            {% endif %}
+        </section>
+
+        <section class="profile-section">
+            <h2>🔖 Хочу посмотреть ({{ want_to_watch_movies|length }})</h2>
+            {% if want_to_watch_movies %}
+            <div class="movie-grid small">
+                {% for movie in want_to_watch_movies %}
+                <div class="movie-card">
+                    <h3><a href="/movie/{{ movie.id }}">{{ movie.title }}</a></h3>
+                    <p>{{ movie.genres or 'Жанр не указан' }} ({{ movie.release_year }})</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p>Список «Хочу посмотреть» пуст.</p>
+            {% endif %}
+        </section>
+
+        <section class="profile-section">
+            <h2>📝 Отзывы ({{ reviews|length }})</h2>
+            {% if reviews %}
+            <div class="reviews-list">
+                {% for review in reviews %}
+                <div class="review-item">
+                    <h3><a href="/movie/{{ review.id }}">{{ review.title }}</a></h3>
+                    <p class="review-date">{{ review.created_at }}</p>
+                    <p>{{ review.review_text }}</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p>Нет отзывов.</p>
+            {% endif %}
+        </section>
+
+        <section class="profile-section">
+            <h2>📁 Публичные подборки ({{ collections|length }})</h2>
+            {% if collections %}
+            <div class="collections-list">
+                {% for col in collections %}
+                <div class="collection-card">
+                    <h3><a href="/collection/{{ col.id }}">{{ col.name }}</a></h3>
+                    <span class="playlist-date">{{ col.created_at[:10] }}</span>
+                    <div class="collection-posters">
+                        {% set posters = col.posters.split(',') if col.posters else [] %}
+                        {% for poster in posters[:4] %}
+                        <img src="{{ poster }}" class="collection-poster-thumb" alt="Постер">
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p>Нет публичных подборок.</p>
+            {% endif %}
+        </section>
+    </main>
+
+    <script>
+        const menuToggle = document.querySelector('.menu-toggle');
+        const userPanel = document.querySelector('.user-panel');
+        menuToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            userPanel.classList.toggle('show');
+        });
+        document.addEventListener('click', function() {
+            userPanel.classList.remove('show');
+        });
+    </script>
+</body>
+</html>

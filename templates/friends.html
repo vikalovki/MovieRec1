@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Друзья</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <button class="menu-toggle">☰</button>
+            <nav class="user-panel">
+                <a href="/home">🏠 Каталог</a>
+                <a href="/profile">👤 {{ session['username'] }}</a>
+                <a href="/my-collections">📁 Мои подборки</a>
+                <a href="/friends" class="active">👥 Друзья</a>
+                <a href="/recommendations" class="btn-outline">📌 Рекомендации</a>
+                <a href="/logout" class="btn-outline">Выйти</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="content">
+        <h1>👥 Друзья</h1>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div style="padding: 12px; border-radius: 10px; margin-bottom: 12px; {% if category == 'error' %}background: rgba(255,59,63,0.2); color: #ff8a8d{% else %}background: rgba(40,167,69,0.2); color: #8aff8a{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <section>
+            <h2>Добавить друга</h2>
+            <form action="/friends/add" method="POST" style="display: flex; gap: 10px; max-width: 400px;">
+                <input type="text" name="username" placeholder="Имя пользователя" required style="flex: 1; padding: 10px; border-radius: 20px; border: 1px solid #444; background: #1e1e1e; color: white;">
+                <button type="submit" class="btn-primary">Отправить заявку</button>
+            </form>
+        </section>
+
+        {% if requests %}
+        <section style="margin-top: 40px;">
+            <h2>Входящие заявки</h2>
+            <ul style="list-style: none; padding: 0;">
+                {% for req in requests %}
+                <li style="background: #151515; padding: 12px 20px; border-radius: 20px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                    <a href="/user/{{ req.id }}" style="color: #e0e0e0; text-decoration: none;">{{ req.username }}</a>
+                    <form action="/friends/accept/{{ req.id }}" method="POST">
+                        <button type="submit" class="btn-primary" style="padding: 6px 16px;">Принять</button>
+                    </form>
+                </li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endif %}
+
+        <section style="margin-top: 40px;">
+            <h2>Мои друзья</h2>
+            {% if friends %}
+            <ul style="list-style: none; padding: 0;">
+                {% for friend in friends %}
+                <li style="background: #151515; padding: 12px 20px; border-radius: 20px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                    <a href="/user/{{ friend.id }}" style="color: #e0e0e0; text-decoration: none;">{{ friend.username }}</a>
+                    <form action="/friends/remove/{{ friend.id }}" method="POST">
+                        <button type="submit" class="btn-delete" style="background: none; border: none; color: #ff3b3f; font-size: 1.2rem;">✖</button>
+                    </form>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p>У вас пока нет друзей.</p>
+            {% endif %}
+        </section>
+    </main>
+
+    <script>
+        const menuToggle = document.querySelector('.menu-toggle');
+        const userPanel = document.querySelector('.user-panel');
+        menuToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            userPanel.classList.toggle('show');
+        });
+        document.addEventListener('click', function() {
+            userPanel.classList.remove('show');
+        });
+    </script>
+</body>
+</html>

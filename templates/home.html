@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Каталог фильмов</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <button class="menu-toggle">☰</button>
+            <nav class="user-panel">
+                <a href="/home" class="active">🏠 Каталог</a>
+                <a href="/profile">👤 {{ session['username'] }}</a>
+                <a href="/my-collections">📁 Мои подборки</a>
+                <a href="/friends">👥 Друзья</a>
+                <a href="/recommendations" class="btn-outline">📌 Рекомендации</a>
+                <a href="/logout" class="btn-outline">Выйти</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="content">
+        <div class="catalog-header">
+            <h1>🎬 Каталог фильмов и сериалов</h1>
+            <form method="GET" action="/home" class="search-form">
+                <input type="text" name="q" placeholder="Поиск по названию..." value="{{ search_query }}" class="search-input">
+                <select name="genre" class="genre-select">
+                    <option value="">Все жанры</option>
+                    {% for g in all_genres %}
+                    <option value="{{ g }}" {% if genre_filter == g %}selected{% endif %}>{{ g }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="search-btn">Найти</button>
+            </form>
+        </div>
+
+        {% if is_search %}
+        <div class="search-info">
+            {% if search_query and genre_filter %}
+                Результаты: «{{ search_query }}» (жанр: {{ genre_filter }})
+            {% elif search_query %}
+                Результаты поиска по запросу: «{{ search_query }}»
+            {% elif genre_filter %}
+                Результаты поиска по жанру: {{ genre_filter }}
+            {% endif %}
+            <span class="results-count">Найдено: {{ movies|length }}</span>
+            <a href="/home" class="clear-search">✖ Сбросить</a>
+        </div>
+        {% endif %}
+
+        {% if not is_search and new_movies %}
+        <h2>🆕 Новинки 2025–2026</h2>
+        <div class="movie-grid">
+            {% for movie in new_movies %}
+            <div class="movie-card">
+                <div class="movie-poster-small">
+                    {% if movie.poster_url %}
+                    <img src="{{ movie.poster_url }}" alt="{{ movie.title }}">
+                    {% else %}
+                    <div class="poster-placeholder-small">🎬</div>
+                    {% endif %}
+                </div>
+                <h3><a href="/movie/{{ movie.id }}">{{ movie.title }}</a></h3>
+                <p class="genre">{{ movie.type == 'series' and '📺 Сериал' or '🎬 Фильм' }} • {{ movie.release_year }}</p>
+                {% if movie.avg_rating %}
+                <div class="rating">⭐ {{ "%.1f"|format(movie.avg_rating) }}</div>
+                {% else %}
+                <div class="rating">Нет оценок</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <h2>{% if is_search %}🔍 Найдено{% else %}🎬 Все фильмы и сериалы{% endif %}</h2>
+
+        {% if movies %}
+        <div class="movie-grid">
+            {% for movie in movies %}
+            <div class="movie-card">
+                <div class="movie-poster-small">
+                    {% if movie.poster_url %}
+                    <img src="{{ movie.poster_url }}" alt="{{ movie.title }}">
+                    {% else %}
+                    <div class="poster-placeholder-small">🎬</div>
+                    {% endif %}
+                </div>
+                <h3><a href="/movie/{{ movie.id }}">{{ movie.title }}</a></h3>
+                <p class="genre">
+                    {{ movie.type == 'series' and '📺 Сериал' or '🎬 Фильм' }} • 
+                    {{ movie.genres or 'Жанр не указан' }} ({{ movie.release_year }})
+                </p>
+                <p class="description">{{ movie.description|truncate(120) }}</p>
+                {% if movie.avg_rating %}
+                <div class="rating">⭐ {{ "%.1f"|format(movie.avg_rating) }}</div>
+                {% else %}
+                <div class="rating">Нет оценок</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p>😕 По вашему запросу ничего не найдено.</p>
+        <a href="/home" class="btn-back">Вернуться к каталогу</a>
+        {% endif %}
+    </main>
+
+    <script>
+        const menuToggle = document.querySelector('.menu-toggle');
+        const userPanel = document.querySelector('.user-panel');
+        menuToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            userPanel.classList.toggle('show');
+        });
+        document.addEventListener('click', function() {
+            userPanel.classList.remove('show');
+        });
+    </script>
+</body>
+</html>

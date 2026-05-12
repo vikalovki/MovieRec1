@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ collection.name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <button class="menu-toggle">☰</button>
+            <nav class="user-panel">
+                <a href="/home">🏠 Каталог</a>
+                <a href="/profile">👤 {{ session['username'] }}</a>
+                <a href="/my-collections">📁 Мои подборки</a>
+                <a href="/friends">👥 Друзья</a>
+                <a href="/recommendations" class="btn-outline">📌 Рекомендации</a>
+                <a href="/logout" class="btn-outline">Выйти</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="content">
+        <a href="{{ session.get('collection_back', '/my-collections') }}" class="btn-back">← Назад</a>
+        <div class="collection-header">
+            <h1>{{ collection.name }}</h1>
+            <div style="display: flex; gap: 10px;">
+                <a href="/collection/{{ collection.id }}/recommendations" class="btn-primary">🎯 Рекомендации</a>
+                {% if session.user_id == collection.user_id %}
+                <details>
+                    <summary class="btn-outline">Поделиться</summary>
+                    <div style="position: absolute; background: #1c1c1c; padding: 15px; border-radius: 10px; margin-top: 10px;">
+                        <form action="/collection/{{ collection.id }}/share" method="POST" style="display: flex; gap: 10px;">
+                            <select name="username" required style="padding: 10px; border-radius: 8px; background: #1e1e1e; color: white; border: 1px solid #333;">
+                                <option value="">Выберите друга</option>
+                                {% for f in friends %}
+                                <option value="{{ f.username }}">{{ f.username }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn-primary" style="padding: 8px 16px;">Открыть доступ</button>
+                        </form>
+                    </div>
+                </details>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Флэш-сообщения -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div style="padding: 12px; border-radius: 10px; margin-bottom: 20px; background: {% if category == 'error' %}rgba(255,59,63,0.2){% else %}rgba(40,167,69,0.2){% endif %}; color: {% if category == 'error' %}#ff8a8d{% else %}#8aff8a{% endif %};">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <p style="color: #aaa;">Автор: {{ collection.owner_name }}</p>
+
+        {% if movies %}
+        <div class="movie-grid">
+            {% for movie in movies %}
+            <div class="movie-card">
+                <div class="movie-poster-small">
+                    {% if movie.poster_url %}
+                    <img src="{{ movie.poster_url }}" alt="{{ movie.title }}">
+                    {% else %}
+                    <div class="poster-placeholder-small">🎬</div>
+                    {% endif %}
+                </div>
+                <h3><a href="/movie/{{ movie.id }}">{{ movie.title }}</a></h3>
+                <p class="genre">
+                    {{ movie.type == 'series' and '📺 Сериал' or '🎬 Фильм' }} •
+                    {{ movie.genres or 'Жанр не указан' }} ({{ movie.release_year }})
+                </p>
+                <p class="description">{{ movie.description|truncate(100) }}</p>
+                {% if movie.avg_rating %}
+                <div class="rating">⭐ {{ "%.1f"|format(movie.avg_rating) }}</div>
+                {% else %}
+                <div class="rating">Нет оценок</div>
+                {% endif %}
+                {% if session.user_id == collection.user_id or session.user_id in access_user_ids %}
+                <form action="/collection/{{ collection.id }}/remove/{{ movie.id }}" method="POST" style="margin-top: 8px; text-align: right;">
+                    <button type="submit" title="Удалить из подборки" style="background: none; border: none; color: #ff3b3f; font-size: 1.3rem; cursor: pointer; padding: 4px 8px;">🗑️</button>
+                </form>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p>В этой подборке пока нет фильмов.</p>
+        {% endif %}
+    </main>
+
+    <script>
+        const menuToggle = document.querySelector('.menu-toggle');
+        const userPanel = document.querySelector('.user-panel');
+        menuToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            userPanel.classList.toggle('show');
+        });
+        document.addEventListener('click', function() {
+            userPanel.classList.remove('show');
+        });
+    </script>
+</body>
+</html>

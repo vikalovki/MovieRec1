@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Рекомендации коллекции</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <button class="menu-toggle">☰</button>
+            <nav class="user-panel">
+                <a href="/home">🏠 Каталог</a>
+                <a href="/profile">👤 {{ session['username'] }}</a>
+                <a href="/my-collections">📁 Мои подборки</a>
+                <a href="/friends">👥 Друзья</a>
+                <a href="/recommendations" class="btn-outline">📌 Рекомендации</a>
+                <a href="/logout" class="btn-outline">Выйти</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="content">
+        <a href="/collection/{{ col_id }}" class="btn-back">← Назад к коллекции</a>
+        <h1>🎯 Рекомендации на основе коллекции</h1>
+
+        {% if movies %}
+        <h2>🎬 Рекомендованные фильмы</h2>
+        <div class="movie-grid">
+            {% for m in movies %}
+            <div class="movie-card">
+                <div class="movie-poster-small">
+                    {% if m.poster_url %}<img src="{{ m.poster_url }}" alt="{{ m.title }}">{% else %}<div class="poster-placeholder-small">🎬</div>{% endif %}
+                </div>
+                <h3><a href="/movie/{{ m.id }}">{{ m.title }}</a></h3>
+                <p class="genre">{{ m.genres or 'Жанр' }} ({{ m.release_year }})</p>
+                {% if m.avg_rating %}<div class="rating">⭐ {{ "%.1f"|format(m.avg_rating) }}</div>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if series %}
+        <h2 style="margin-top: 40px;">📺 Рекомендованные сериалы</h2>
+        <div class="movie-grid">
+            {% for s in series %}
+            <div class="movie-card">
+                <div class="movie-poster-small">
+                    {% if s.poster_url %}<img src="{{ s.poster_url }}" alt="{{ s.title }}">{% else %}<div class="poster-placeholder-small">📺</div>{% endif %}
+                </div>
+                <h3><a href="/movie/{{ s.id }}">{{ s.title }}</a></h3>
+                <p class="genre">{{ s.genres or 'Жанр' }} ({{ s.release_year }})</p>
+                {% if s.avg_rating %}<div class="rating">⭐ {{ "%.1f"|format(s.avg_rating) }}</div>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if not movies and not series %}
+        <p style="text-align:center; color:#888; margin-top:40px;">Не удалось подобрать рекомендации. Попробуйте добавить больше фильмов в коллекцию.</p>
+        {% endif %}
+    </main>
+
+    <script>
+        const menuToggle = document.querySelector('.menu-toggle');
+        const userPanel = document.querySelector('.user-panel');
+        menuToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            userPanel.classList.toggle('show');
+        });
+        document.addEventListener('click', function() {
+            userPanel.classList.remove('show');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Мои киноподборки</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <button class="menu-toggle">☰</button>
+            <nav class="user-panel">
+                <a href="/home">🏠 Каталог</a>
+                <a href="/profile">👤 {{ session['username'] }}</a>
+                <a href="/my-collections" class="active">📁 Мои подборки</a>
+                <a href="/friends">👥 Друзья</a>
+                <a href="/recommendations" class="btn-outline">📌 Рекомендации</a>
+                <a href="/logout" class="btn-outline">Выйти</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <h1 style="margin:0;">📁 Мои киноподборки</h1>
+            <a href="#create-collection" class="btn-create-collection">＋ Создать новую подборку</a>
+        </div>
+
+        <div id="create-collection" style="display: none; background: #1c1c1c; border-radius: 16px; padding: 20px; margin-bottom: 30px;">
+            <form action="/collection/create" method="POST" style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                <input type="text" name="name" placeholder="Название подборки" required style="flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #3a3a3a; background: #1e1e1e; color: white;">
+                <label style="color: #ccc; white-space: nowrap;">
+                    <input type="checkbox" name="is_public" value="true"> Публичная
+                </label>
+                <button type="submit" class="btn-primary">Создать</button>
+            </form>
+        </div>
+
+        {% if collections %}
+        <div class="collections-list">
+            {% for col in collections %}
+            <div class="collection-card">
+                <h3><a href="/collection/{{ col.id }}">{{ col.name }}</a></h3>
+                <span class="playlist-date">{{ col.created_at[:10] }}</span>
+                {% if col.is_public %}<span style="color: #4caf50;">🌐</span>{% endif %}
+                <div class="collection-posters">
+                    {% set posters = col.posters.split(',') if col.posters else [] %}
+                    {% for poster in posters[:4] %}
+                    <img src="{{ poster }}" class="collection-poster-thumb" alt="Постер">
+                    {% endfor %}
+                    {% if posters|length == 0 %}
+                    <div class="collection-poster-thumb" style="background: #2a2a2a; display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #ff3b3f;">🎬</div>
+                    {% endif %}
+                </div>
+                <div style="margin-top: 10px;">
+                    <form action="/collection/{{ col.id }}/delete" method="POST" style="display: inline;" onsubmit="return confirm('Удалить подборку?')">
+                        <button type="submit" class="btn-delete" style="background: none; border: none; color: #ff3b3f; font-size: 1.2rem; cursor: pointer;">🗑️</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="text-align:center; color:#888; margin-top:40px;">У вас пока нет киноподборок.</p>
+        {% endif %}
+    </main>
+
+    <script>
+        const menuToggle = document.querySelector('.menu-toggle');
+        const userPanel = document.querySelector('.user-panel');
+        menuToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            userPanel.classList.toggle('show');
+        });
+        document.addEventListener('click', function() {
+            userPanel.classList.remove('show');
+        });
+
+        document.querySelector('.btn-create-collection').addEventListener('click', function(e) {
+            e.preventDefault();
+            const form = document.getElementById('create-collection');
+            if (form.style.display === 'none' || form.style.display === '') {
+                form.style.display = 'block';
+                window.scrollTo({ top: form.offsetTop - 80, behavior: 'smooth' });
+            } else {
+                form.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Рекомендации</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <button class="menu-toggle">☰</button>
+            <nav class="user-panel">
+                <a href="/home">🏠 Каталог</a>
+                <a href="/profile">👤 {{ session['username'] }}</a>
+                <a href="/my-collections">📁 Мои подборки</a>
+                <a href="/friends">👥 Друзья</a>
+                <a href="/recommendations" class="active">🎯 Рекомендации</a>
+                <a href="/logout" class="btn-outline">Выйти</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="content">
+        <h1>🎯 Персональные рекомендации</h1>
+        
+        {% if is_new_user %}
+        <div class="new-user-message">
+            <h2>👋 Оцените фильмы и сериалы, чтобы мы подобрали лучшее для вас</h2>
+            <p>Вы оценили <strong>{{ rated_count }}</strong> из 5 фильмов или сериалов. Нужно ещё {{ 5 - rated_count }}.</p>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ (rated_count|float / 5) * 100 }}%;"></div>
+            </div>
+            <a href="/home" class="btn-primary">Перейти в каталог</a>
+        </div>
+        {% else %}
+            {% if movies %}
+            <h2>🎬 Рекомендованные фильмы</h2>
+            <div class="movie-grid">
+                {% for movie in movies %}
+                <div class="movie-card">
+                    <div class="movie-poster-small">
+                        {% if movie.poster_url %}
+                        <img src="{{ movie.poster_url }}" alt="{{ movie.title }}">
+                        {% else %}
+                        <div class="poster-placeholder-small">🎬</div>
+                        {% endif %}
+                    </div>
+                    <h3><a href="/movie/{{ movie.id }}">{{ movie.title }}</a></h3>
+                    <p>
+                        <span class="type-badge {{ 'movie' if movie.type=='movie' else 'series' }}">{{ '🎬 Фильм' if movie.type=='movie' else '📺 Сериал' }}</span>
+                        {{ movie.genres or 'Жанр не указан' }} ({{ movie.release_year }})
+                    </p>
+                    {% if movie.type=='series' %}
+                        <p class="seasons">Сезонов: {{ movie.seasons or '?' }}, серий: {{ movie.episodes or '?' }}</p>
+                    {% endif %}
+                    {% if movie.avg_rating %}
+                    <div class="rating">⭐ {{ "%.1f"|format(movie.avg_rating) }}</div>
+                    {% else %}
+                    <div class="rating">Нет оценок</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if series %}
+            <h2>📺 Рекомендованные сериалы</h2>
+            <div class="movie-grid">
+                {% for s in series %}
+                <div class="movie-card">
+                    <div class="movie-poster-small">
+                        {% if s.poster_url %}
+                        <img src="{{ s.poster_url }}" alt="{{ s.title }}">
+                        {% else %}
+                        <div class="poster-placeholder-small">📺</div>
+                        {% endif %}
+                    </div>
+                    <h3><a href="/movie/{{ s.id }}">{{ s.title }}</a></h3>
+                    <p>
+                        <span class="type-badge series">📺 Сериал</span>
+                        {{ s.genres or 'Жанр не указан' }} ({{ s.release_year }})
+                    </p>
+                    <p class="seasons">Сезонов: {{ s.seasons or '?' }}, серий: {{ s.episodes or '?' }}</p>
+                    {% if s.avg_rating %}
+                    <div class="rating">⭐ {{ "%.1f"|format(s.avg_rating) }}</div>
+                    {% else %}
+                    <div class="rating">Нет оценок</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        {% endif %}
+    </main>
+
+    <script>
+        const menuToggle = document.querySelector('.menu-toggle');
+        const userPanel = document.querySelector('.user-panel');
+        menuToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            userPanel.classList.toggle('show');
+        });
+        document.addEventListener('click', function() {
+            userPanel.classList.remove('show');
+        });
+    </script>
+</body>
+</html>
